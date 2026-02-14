@@ -130,7 +130,7 @@ def send_ntfy_alert(name: str, age: Optional[int], vcard: vobject.base.Component
         actions.append(f"view, Call, tel:{p}, clear=true")
 
     headers = {
-        "Title": f"🎂 Születésnap: {name}".encode('utf-8'),
+        "Title": f"🎂 Birthday: {name}".encode('utf-8'),
         "Tags": "birthday,cake",
         "Icon": ICON_URL,
         "Priority": "4",
@@ -139,7 +139,7 @@ def send_ntfy_alert(name: str, age: Optional[int], vcard: vobject.base.Component
     if NTFY_TOKEN:
         headers["Authorization"] = f"Bearer {NTFY_TOKEN}"
 
-    msg = f"Ma van {name} születésnapja!{f' ({age}. éves)' if age else ''}"
+    msg = f"Today is {name}'s birthday!{f' ({age} years old)' if age else ''}"
     try:
         requests.post(NTFY_URL, data=msg.encode('utf-8'), headers=headers, timeout=20)
     except Exception as e:
@@ -155,7 +155,7 @@ def check_birthdays():
         return
 
     urls = get_vcf_urls()
-    logger.info(f"Radicale szinkronizálás. {len(urls)} kontakt található.")
+    logger.info(f"Radicale sync. {len(urls)} contacts found.")
     for url in urls:
         try:
             res = requests.get(url, auth=(RADICALE_USER, RADICALE_PASS), timeout=20)
@@ -165,15 +165,15 @@ def check_birthdays():
                 if hasattr(vcard, 'bday'):
                     is_today, age = parse_bday(vcard.bday.value)
                     if is_today:
-                        name = vcard.fn.value if hasattr(vcard, 'fn') else "Ismeretlen"
+                        name = vcard.fn.value if hasattr(vcard, 'fn') else "Unknown"
                         send_ntfy_alert(name, age, vcard)
-                        logger.info(f"Értesítés elküldve: {name}")
+                        logger.info(f"Notification sent: {name}")
         except Exception as e:
-            logger.error(f"Hiba a feldolgozás során ({url}): {e}")
+            logger.error(f"Error during processing ({url}): {e}")
 
 
 if __name__ == "__main__":
-    logger.info("Születésnap figyelő szolgáltatás elindult. Várakozás az éjféli ablakra (00:00 - 01:00).")
+    logger.info("Birthday monitor service started. Waiting for the midnight window (00:00 - 01:00).")
 
     while True:
         now = datetime.datetime.now()
@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
         # If we are currently between 00:00 and 01:00, run it now!
         if now.hour == 0:
-            logger.info("Az aktuális idő a végrehajtási ablakban van. Szinkronizálás indítása...")
+            logger.info("Current time is within the execution window. Starting sync...")
             check_birthdays()
             # After run, wait until next day's midnight to avoid double execution
             now = datetime.datetime.now()
@@ -193,6 +193,6 @@ if __name__ == "__main__":
         sleep_secs = (target - now).total_seconds() + jitter
 
         logger.info(
-            f"Következő szinkronizálás tervezett ideje: {target + datetime.timedelta(seconds=jitter)}. Alvás {sleep_secs / 3600:.2f} órán keresztül."
+            f"Next sync scheduled for: {target + datetime.timedelta(seconds=jitter)}. Sleeping for {sleep_secs / 3600:.2f} hours."
         )
         time.sleep(sleep_secs)
