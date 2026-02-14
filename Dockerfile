@@ -1,11 +1,23 @@
-LABEL org.opencontainers.image.authors="nurefexc"
-LABEL org.opencontainers.image.source="https://github.com/nurefexc/radicale-ntfy-birthday-alert"
-LABEL org.opencontainers.image.url="https://hub.docker.com/r/nurefexc/radicale-ntfy-birthday-alert"
-LABEL org.opencontainers.image.description="Radicale CardDAV birthday to ntfy.sh alert bridge"
-
 FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV TZ=UTC
+
+LABEL description="Radicale CardDAV birthday to ntfy.sh alert bridge"
+LABEL maintainer="nurefexc"
+
 WORKDIR /app
+
+# Install dependencies and tzdata
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
 COPY main.py .
+
+# Run the application
 CMD ["python", "main.py"]
